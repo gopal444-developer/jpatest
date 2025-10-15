@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JPA Online Test</title>
+    <title>JPA Online Test - Advanced</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,12 +22,31 @@
             <h1 class="main-heading">Welcome to JPA Test</h1>
             <div class="center-box">
                 <h2>Enter Student Name</h2>
-                <input type="text" id="student-name" placeholder="Apna pura naam dalen...">
+                <input type="text" id="student-name" placeholder="Apna pura naam dalen..."> 
+                
                 <div class="set-buttons">
-                    <button class="set-btn" data-set="A">Set A</button>
-                    <button class="set-btn" data-set="B">Set B</button>
-                    <button class="set-btn" data-set="C">Set C</button>
+                    <button class="set-btn" data-set="A">Set A (Loading...)</button>
+                    <button class="set-btn" data-set="B">Set B (Loading...)</button>
+                    <button class="set-btn" data-set="C">Set C (Loading...)</button>
                 </div>
+                
+                <div id="test-rules-card">
+                    <h4 style="color: var(--primary-color); border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">Test Rules Summary:</h4>
+                    <ul class="rules-list">
+                        <li>⏱️ Total Time: <span id="summary-time">0</span> Minutes</li>
+                        <li>➕ Positive Mark: <span id="summary-pos-mark">0</span> Mark</li>
+                        <li>➖ Negative Mark: <span id="summary-neg-mark">0</span> Mark</li>
+                    </ul>
+                    <button id="show-detailed-rules" class="rules-toggle-btn">Read Detailed Instructions 📖</button>
+                    <div id="detailed-rules-text" class="hidden-section detailed-rules">
+                         <p>1. **Environment:** Do not switch tabs or minimize the browser during the test. Doing so may result in automatic submission.</p>
+                         <p>2. **Attempted Questions:** You can navigate to any attempted or unattempted question using the panel on the right.</p>
+                         <p>3. **Submission:** Click the **Submit** button on the last question, or the test will automatically submit when the timer runs out.</p>
+                         <p>4. **Marking:** Scores are calculated based on the displayed marking scheme (positive/negative marks).</p>
+                    </div>
+                </div>
+
+                <button id="resume-btn" class="nav-btn hidden-section" style="background-color: var(--success-color);">Resume Previous Test</button>
                 <div id="live-date"></div>
             </div>
         </section>
@@ -36,8 +55,23 @@
             <h2 id="quiz-welcome-heading"></h2>
             <div class="quiz-container">
                 <div class="timer-display">Time Left: <span id="quiz-timer">15:00</span></div>
+                
+                <div class="progress-bar-container">
+                    <div id="question-progress" class="progress-bar-fill"></div>
+                    <span id="question-counter">Q 1/40</span>
+                </div>
+                
+                <div id="question-image-display" class="question-image-display"></div>
+
                 <div id="question-display">
                     </div>
+                
+                <div class="quiz-status-panel">
+                    <h3>Question Status:</h3>
+                    <div id="question-nav-grid" class="question-nav-grid">
+                        </div>
+                </div>
+
                 <div class="quiz-navigation">
                     <button id="prev-btn" class="nav-btn" disabled>Previous</button>
                     <button id="next-submit-btn" class="nav-btn">Next</button>
@@ -45,13 +79,15 @@
             </div>
         </section>
 
-        <p class="gopal">Created by Gopal Mule</p>
-
         <section id="result-screen" class="hidden-section">
             <h2 class="main-heading">Test Result</h2>
             <div class="result-box">
+                <p>Student Name: <span id="student-name-result"></span></p>
+                <p>Test Set: <span id="test-set-result"></span></p>
+                <hr style="margin: 10px 0;">
                 <p>Total Questions: <span id="total-q"></span></p>
                 <p>Attempted Questions: <span id="attempted-q"></span></p>
+                <p>Incorrect Answers: <span id="incorrect-q" style="color: var(--danger-color);"></span></p>
                 <p>Non-Attempted Questions: <span id="non-attempted-q"></span></p>
                 <p class="score-line">Total Score: <span id="final-score"></span> / <span id="max-score"></span></p>
                 <button id="back-to-home">Back to Home</button>
@@ -74,15 +110,26 @@
             <h1 class="main-heading">Admin Panel</h1>
 
             <div class="admin-section">
-                <h2>Change Answer Key</h2>
-                <p>Select a Set to modify its questions and correct answer keys.</p>
-                <button class="admin-set-btn" data-set="A" onclick="openAnswerKeyEditor('A')">Set A Answer Key</button>
-                <button class="admin-set-btn" data-set="B" onclick="openAnswerKeyEditor('B')">Set B Answer Key</button>
-                <button class="admin-set-btn" data-set="C" onclick="openAnswerKeyEditor('C')">Set C Answer Key</button>
+                <h2>Set Marking Scheme</h2>
+                <label for="positive-mark">Positive Mark (Correct Answer)</label>
+                <input type="number" id="positive-mark" value="1" min="1" style="width: 100%;">
+                <label for="negative-mark">Negative Mark (Incorrect Answer - Enter as 0 or negative number)</label>
+                <input type="number" id="negative-mark" value="0" style="width: 100%;">
+                <button onclick="saveAdminSettings('marking')" style="background-color: var(--secondary-color);">Save Marking Scheme</button>
+            </div>
+
+            <div class="admin-section">
+                <h2>Question Bank Management (CRUD)</h2>
+                <p>Select a Set to modify its questions (Text, Image URL, Options, Answer).</p>
+                <button class="admin-set-btn" data-set="A" onclick="openAnswerKeyEditor('A')">Set A Key/Q</button>
+                <button class="admin-set-btn" data-set="B" onclick="openAnswerKeyEditor('B')">Set B Key/Q</button>
+                <button class="admin-set-btn" data-set="C" onclick="openAnswerKeyEditor('C')">Set C Key/Q</button>
 
                 <div id="answer-key-editor" class="hidden-section" style="margin-top: 20px; padding: 15px; border: 1px dashed var(--primary-color);">
-                    <h3>Editing Answer Key for Set: <span id="editing-set-name"></span></h3>
-                    <p style="color: var(--danger-color); font-weight: 600;">⚠️ Changes made here are saved in your browser's local storage.</p>
+                    <h3>Editing Set: <span id="editing-set-name"></span></h3>
+                    <p style="color: var(--danger-color); font-weight: 600;">⚠️ Changes are saved locally. Use a proper server for production!</p>
+                    
+                    <button onclick="addNewQuestion()" style="background-color: var(--success-color); margin-bottom: 15px; display: block; width: 100%;">+ Add New Question</button>
                     
                     <div id="questions-list-container"></div>
                     
@@ -90,16 +137,20 @@
                     <button onclick="closeAnswerKeyEditor()" style="background-color: var(--danger-color); margin-top: 15px;">Close Editor</button>
                 </div>
             </div>
-
+            
             <div class="admin-section">
-                <h2>Change question quantity</h2>
-                <label for="q-quantity">New Question Count (Default: 40)</label>
-                <input type="number" id="q-quantity" value="40" min="1" max="100">
-                <button onclick="saveAdminSettings('quantity')">Save Quantity</button>
+                <h2>Data Utility: Import/Export</h2>
+                <p>Backup or restore your questions data.</p>
+                <button onclick="exportQuestionsData()">Export All Questions (JSON)</button>
+                <label class="custom-file-upload">
+                    <input type="file" id="import-file-input" accept=".json" onchange="importQuestionsData(event)"/>
+                    Import Questions (JSON)
+                </label>
             </div>
 
+
             <div class="admin-section">
-                <h2>Change question Time</h2>
+                <h2>Change Quiz Time</h2>
                 <label for="q-time">New Time (in seconds)</label>
                 <input type="number" id="q-time" value="900" min="60" max="3600">
                 <button onclick="saveAdminSettings('time')">Save Time</button>
@@ -107,6 +158,7 @@
             
             <div class="admin-section full-width">
                 <button id="student-result-btn" class="result-toggle-btn">Student Result</button>
+                <button id="download-data-btn" class="result-toggle-btn" style="background-color: #00bcd4; margin-top: 10px;">Download Results (CSV)</button>
             </div>
 
             <div id="student-result-section" class="hidden-section admin-result-area">
@@ -119,11 +171,11 @@
                             <th>Student Name</th>
                             <th>Set</th>
                             <th>Date</th>
-                            <th>Mark</th>
+                            <th>Score</th>
                         </tr>
                     </thead>
                     <tbody id="result-table-body">
-                        </tbody>
+                    </tbody>
                 </table>
                 <button id="clear-data-btn" class="clear-btn">Clear Data</button>
             </div>
@@ -144,5 +196,4 @@
 
     <script src="script.js"></script>
 </body>
-
 </html>

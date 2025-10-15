@@ -1,17 +1,24 @@
-/* Google Font Import (Optional: Agar aap koi modern font chahte hain) */
+/* --- J P A Test Website - style.css (V4 - Home Page Feature) --- */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
+/* --- 1. Root Variables --- */
 :root {
-    --primary-color: #3f51b5; /* Deep Indigo for Navbar/Buttons */
-    --secondary-color: #ffc107; /* Amber for accents */
-    --background-color: #f4f7f6; /* Light background */
-    --card-color: #ffffff; /* White for boxes/cards */
+    --primary-color: #3f51b5; 
+    --secondary-color: #ffc107; 
+    --background-color: #f4f7f6; 
+    --card-color: #ffffff; 
     --text-color: #333333;
     --success-color: #4CAF50;
     --danger-color: #F44336;
+    --attempted-color: #03a9f4; 
+    --current-color: #ff5722; 
+    --unattempted-color: #e0e0e0; 
     --border-radius: 8px;
+    --gap-size: 20px;
 }
 
+/* --- 2. Base Styling and Reset --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -24,12 +31,13 @@ body {
     color: var(--text-color);
     line-height: 1.6;
 }
-.gopal{
-    margin-top: 2.5rem;
-    text-align:center;
+
+/* Utility Class */
+.hidden-section {
+    display: none !important;
 }
 
-/* Navbar Styling */
+/* --- 3. Navbar Styling (No Change) --- */
 .navbar {
     background-color: var(--primary-color);
     color: white;
@@ -37,7 +45,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -58,10 +66,10 @@ body {
     background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* General Layout */
+/* --- 4. General Layout and Inputs --- */
 main {
-    padding: 30px 20px;
-    min-height: calc(100vh - 70px); /* Adjust based on navbar height */
+    padding: var(--gap-size);
+    min-height: calc(100vh - 70px); 
 }
 
 .main-heading {
@@ -81,8 +89,7 @@ main {
     text-align: center;
 }
 
-/* Input Fields */
-input[type="text"], input[type="password"], input[type="number"] {
+input[type="text"], input[type="password"], input[type="number"], textarea, select {
     width: 100%;
     padding: 12px;
     margin: 10px 0 20px;
@@ -102,12 +109,6 @@ button {
     margin: 5px;
 }
 
-.set-buttons button, #admin-login-form button {
-    background-color: var(--secondary-color);
-    color: var(--text-color);
-    flex: 1; /* For set buttons */
-}
-
 .set-buttons {
     display: flex;
     justify-content: space-between;
@@ -115,40 +116,140 @@ button {
     margin-bottom: 20px;
 }
 
-.set-buttons button:hover, #admin-login-form button:hover {
+.set-buttons button {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    flex: 1;
+    font-size: 0.9em; /* Slightly smaller text for button */
+}
+
+.set-buttons button:hover {
     background-color: #ff9800;
     transform: translateY(-2px);
 }
 
-/* Live Date Styling */
-#live-date {
-    margin-top: 15px;
-    font-size: 0.9em;
+.nav-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    font-size: 1.1em;
+}
+
+#next-submit-btn.submit-btn {
+    background-color: var(--success-color);
+}
+
+.nav-btn:disabled {
+    background-color: #9e9e9e;
+    cursor: not-allowed;
+}
+
+/* --- NEW: Home Screen Rules Card Styling --- */
+#test-rules-card {
+    margin-top: 25px; 
+    padding: 15px; 
+    border: 1px solid #ddd; 
+    border-radius: 6px; 
+    background-color: #f9f9f9; 
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.rules-list {
+    list-style-type: none; 
+    padding-left: 0; 
+    font-size: 0.95em;
+}
+
+.rules-list li {
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.rules-list li span {
+    font-weight: 700;
     color: var(--primary-color);
-    font-weight: 600;
 }
 
-/* Hidden Section Utility */
-.hidden-section {
-    display: none !important;
+.rules-toggle-btn {
+    background-color: #607d8b; /* Greyish blue */
+    color: white;
+    padding: 8px 15px;
+    font-size: 0.9em;
+    margin-top: 10px; 
+    width: 100%;
 }
 
-/* Quiz Styling */
+.detailed-rules {
+    margin-top: 10px; 
+    border-top: 1px dashed #ccc; 
+    padding-top: 10px; 
+    font-size: 0.85em;
+    color: #555;
+}
+
+.detailed-rules p {
+    margin-bottom: 5px;
+}
+/* --- END NEW STYLING --- */
+
+
+/* --- 5. Quiz Screen Alignment (Grid) (No Major Change) --- */
 .quiz-container {
-    max-width: 700px;
+    max-width: 950px; 
     margin: 0 auto;
     background-color: var(--card-color);
-    padding: 25px;
+    padding: var(--gap-size);
     border-radius: var(--border-radius);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    
+    display: grid;
+    gap: var(--gap-size);
+    grid-template-columns: 2fr 1fr; 
+    grid-template-areas: 
+        "timer nav-panel"
+        "progress nav-panel"
+        "main-quiz nav-panel"
+        "nav-btns nav-btns";
 }
 
 .timer-display {
+    grid-area: timer;
     text-align: right;
     font-size: 1.2em;
-    margin-bottom: 20px;
     color: var(--danger-color);
     font-weight: 700;
+}
+
+.progress-bar-container {
+    grid-area: progress;
+    height: 15px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin-bottom: 5px; 
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+#question-counter {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+#question-display {
+    grid-area: main-quiz;
 }
 
 .question-text {
@@ -158,8 +259,21 @@ button {
     color: var(--primary-color);
 }
 
+#question-image-display {
+    margin-bottom: 15px;
+    text-align: center;
+}
+#question-image-display img {
+    max-width: 100%;
+    height: auto;
+    max-height: 250px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
 .options-list {
     list-style: none;
+    padding: 0;
 }
 
 .option-item {
@@ -190,28 +304,64 @@ button {
 }
 
 .quiz-navigation {
+    grid-area: nav-btns;
     display: flex;
     justify-content: space-between;
-    margin-top: 25px;
+    margin-top: 10px;
 }
 
-.nav-btn {
-    background-color: var(--primary-color);
+.quiz-status-panel {
+    grid-area: nav-panel;
+    padding: 15px;
+    background-color: #fafafa;
+    border-radius: var(--border-radius);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.quiz-status-panel h3 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.question-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); 
+    gap: 8px;
+    max-height: 450px; 
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.nav-q-btn {
+    padding: 8px 5px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.nav-q-btn.unattempted {
+    background-color: var(--unattempted-color);
+    color: var(--text-color);
+}
+
+.nav-q-btn.attempted {
+    background-color: var(--attempted-color);
     color: white;
-    padding: 12px 25px;
-    font-size: 1.1em;
 }
 
-#next-submit-btn.submit-btn {
-    background-color: var(--success-color);
+.nav-q-btn.current {
+    background-color: var(--current-color);
+    color: white;
+    border: 2px solid var(--primary-color);
+    transform: scale(1.05);
 }
 
-.nav-btn:disabled {
-    background-color: #9e9e9e;
-    cursor: not-allowed;
-}
 
-/* Result Screen */
+/* --- 6. Result Screen (No Change) --- */
 .result-box {
     max-width: 400px;
     margin: 30px auto;
@@ -247,18 +397,16 @@ button {
     color: white;
 }
 
-/* Admin Styling */
-#admin-login-screen .footer-line {
-    text-align: center;
-    margin-top: 20px;
-    color: #666;
-    font-size: 0.9em;
+/* --- 7. Admin Panel (No Change) --- */
+#admin-panel {
+    max-width: 950px;
+    margin: 0 auto;
 }
 
 .admin-section {
     background-color: var(--card-color);
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: var(--gap-size);
+    margin-bottom: var(--gap-size);
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
@@ -280,6 +428,49 @@ button {
     background-color: #303f9f;
 }
 
+#questions-list-container {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.answer-key-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.delete-q-btn {
+    background-color: var(--danger-color);
+    color: white;
+    margin-top: 10px;
+    padding: 8px 10px;
+    display: block;
+    width: 100%;
+}
+
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #9c27b0; 
+    color: white;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    margin: 5px 0 5px 10px;
+    transition: background-color 0.3s;
+}
+
+.custom-file-upload:hover {
+    background-color: #7b1fa2;
+}
+
+#import-file-input {
+    display: none;
+}
+
 .admin-result-area {
     margin-top: 30px;
     padding: 20px;
@@ -288,11 +479,6 @@ button {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-#student-search {
-    margin-bottom: 20px;
-}
-
-/* Table Styling */
 #result-table {
     width: 100%;
     border-collapse: collapse;
@@ -323,7 +509,24 @@ button {
     width: 100%;
 }
 
-/* Responsive Design */
+/* --- 8. Media Queries (Responsiveness) (No Change) --- */
+@media (max-width: 950px) {
+    .quiz-container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "timer"
+            "progress"
+            "main-quiz"
+            "nav-panel"
+            "nav-btns";
+    }
+    
+    .question-nav-grid {
+        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    }
+}
+
+
 @media (max-width: 600px) {
     .navbar {
         padding: 10px 15px;
@@ -341,12 +544,23 @@ button {
     .set-buttons {
         flex-direction: column;
     }
-    .center-box, .quiz-container {
-        padding: 20px;
+    .center-box, .quiz-container, #admin-panel {
+        padding: 15px;
     }
-    #result-table th, #result-table td {
-        padding: 8px;
-        font-size: 0.9em;
+    .nav-btn {
+        padding: 10px 15px;
+        font-size: 1em;
     }
-
+    .admin-section button {
+        margin-right: 5px;
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+    }
+    .custom-file-upload {
+        margin: 5px 0;
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
 }

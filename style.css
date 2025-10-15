@@ -1,0 +1,347 @@
+/* Google Font Import (Optional: Agar aap koi modern font chahte hain) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+:root {
+    --primary-color: #3f51b5; /* Deep Indigo for Navbar/Buttons */
+    --secondary-color: #ffc107; /* Amber for accents */
+    --background-color: #f4f7f6; /* Light background */
+    --card-color: #ffffff; /* White for boxes/cards */
+    --text-color: #333333;
+    --success-color: #4CAF50;
+    --danger-color: #F44336;
+    --border-radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* Navbar Styling */
+.navbar {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    padding: 8px 15px;
+    border-radius: var(--border-radius);
+    transition: background-color 0.3s;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* General Layout */
+main {
+    padding: 30px 20px;
+    min-height: calc(100vh - 70px); /* Adjust based on navbar height */
+}
+
+.main-heading {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 25px;
+    font-size: 2.2em;
+}
+
+.center-box {
+    background-color: var(--card-color);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    max-width: 450px;
+    margin: 0 auto 30px;
+    text-align: center;
+}
+
+/* Input Fields */
+input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    font-size: 1em;
+}
+
+/* Buttons */
+button {
+    cursor: pointer;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: background-color 0.3s, transform 0.1s;
+    margin: 5px;
+}
+
+.set-buttons button, #admin-login-form button {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    flex: 1; /* For set buttons */
+}
+
+.set-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.set-buttons button:hover, #admin-login-form button:hover {
+    background-color: #ff9800;
+    transform: translateY(-2px);
+}
+
+/* Live Date Styling */
+#live-date {
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Hidden Section Utility */
+.hidden-section {
+    display: none !important;
+}
+
+/* Quiz Styling */
+.quiz-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: var(--card-color);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.timer-display {
+    text-align: right;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: var(--danger-color);
+    font-weight: 700;
+}
+
+.question-text {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.options-list {
+    list-style: none;
+}
+
+.option-item {
+    background-color: #e0e0e0;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.option-item:hover {
+    background-color: #bdbdbd;
+}
+
+.option-item.selected {
+    background-color: var(--secondary-color);
+    font-weight: 600;
+    border: 2px solid var(--primary-color);
+}
+
+.option-label {
+    margin-right: 15px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.quiz-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+.nav-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    font-size: 1.1em;
+}
+
+#next-submit-btn.submit-btn {
+    background-color: var(--success-color);
+}
+
+.nav-btn:disabled {
+    background-color: #9e9e9e;
+    cursor: not-allowed;
+}
+
+/* Result Screen */
+.result-box {
+    max-width: 400px;
+    margin: 30px auto;
+    padding: 30px;
+    background-color: var(--card-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.result-box p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.result-box span {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.score-line {
+    font-size: 1.5em !important;
+    margin: 15px 0;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+#back-to-home {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Admin Styling */
+#admin-login-screen .footer-line {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.admin-section {
+    background-color: var(--card-color);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.admin-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 5px;
+}
+
+.admin-section button {
+    background-color: var(--primary-color);
+    color: white;
+    margin-right: 10px;
+}
+
+.admin-section button:hover {
+    background-color: #303f9f;
+}
+
+.admin-result-area {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: var(--card-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+#student-search {
+    margin-bottom: 20px;
+}
+
+/* Table Styling */
+#result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#result-table th, #result-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+#result-table th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+#result-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.clear-btn {
+    background-color: var(--danger-color) !important;
+    color: white;
+    margin-top: 20px;
+    display: block;
+    width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .navbar {
+        padding: 10px 15px;
+    }
+    .nav-links a {
+        margin-left: 10px;
+        padding: 6px 10px;
+    }
+    main {
+        padding: 15px 10px;
+    }
+    .main-heading {
+        font-size: 1.8em;
+    }
+    .set-buttons {
+        flex-direction: column;
+    }
+    .center-box, .quiz-container {
+        padding: 20px;
+    }
+    #result-table th, #result-table td {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+}

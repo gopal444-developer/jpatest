@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPA Online Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">JPA</div>
+        <div class="nav-links">
+            <a href="#" id="home-link" class="active">Home</a>
+            <a href="#" id="admin-link">Admin</a>
+        </div>
+    </nav>
+
+    <main id="content">
+
+        <section id="home-screen" class="active-section">
+            <h1 class="main-heading">Welcome to JPA Test</h1>
+            <div class="center-box">
+                <h2>Enter Student Name</h2>
+                <input type="text" id="student-name" placeholder="Apna pura naam dalen...">
+                <div class="set-buttons">
+                    <button class="set-btn" data-set="A">Set A</button>
+                    <button class="set-btn" data-set="B">Set B</button>
+                    <button class="set-btn" data-set="C">Set C</button>
+                </div>
+                <div id="live-date"></div>
+            </div>
+        </section>
+
+        <section id="quiz-screen" class="hidden-section">
+            <h2 id="quiz-welcome-heading"></h2>
+            <div class="quiz-container">
+                <div class="timer-display">Time Left: <span id="quiz-timer">15:00</span></div>
+                <div id="question-display">
+                    </div>
+                <div class="quiz-navigation">
+                    <button id="prev-btn" class="nav-btn" disabled>Previous</button>
+                    <button id="next-submit-btn" class="nav-btn">Next</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-screen" class="hidden-section">
+            <h2 class="main-heading">Test Result</h2>
+            <div class="result-box">
+                <p>Total Questions: <span id="total-q"></span></p>
+                <p>Attempted Questions: <span id="attempted-q"></span></p>
+                <p>Non-Attempted Questions: <span id="non-attempted-q"></span></p>
+                <p class="score-line">Total Score: <span id="final-score"></span> / <span id="max-score"></span></p>
+                <button id="back-to-home">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="admin-login-screen" class="hidden-section">
+            <h1 class="main-heading">Admin Login</h1>
+            <div class="center-box">
+                <form id="admin-login-form">
+                    <input type="text" id="admin-username" placeholder="Login ID" required>
+                    <input type="password" id="admin-password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <p class="footer-line">Created by Gopal Mule</p>
+        </section>
+
+        <section id="admin-panel" class="hidden-section">
+            <h1 class="main-heading">Admin Panel</h1>
+
+            <div class="admin-section">
+                <h2>Change Answer Key</h2>
+                <p>Select a Set to modify its questions and correct answer keys.</p>
+                <button class="admin-set-btn" data-set="A" onclick="openAnswerKeyEditor('A')">Set A Answer Key</button>
+                <button class="admin-set-btn" data-set="B" onclick="openAnswerKeyEditor('B')">Set B Answer Key</button>
+                <button class="admin-set-btn" data-set="C" onclick="openAnswerKeyEditor('C')">Set C Answer Key</button>
+
+                <div id="answer-key-editor" class="hidden-section" style="margin-top: 20px; padding: 15px; border: 1px dashed var(--primary-color);">
+                    <h3>Editing Answer Key for Set: <span id="editing-set-name"></span></h3>
+                    <p style="color: var(--danger-color); font-weight: 600;">⚠️ Changes made here are saved in your browser's local storage.</p>
+                    
+                    <div id="questions-list-container"></div>
+                    
+                    <button onclick="saveAnswerKeyChanges()" style="background-color: var(--success-color); margin-top: 15px;">Save Changes</button>
+                    <button onclick="closeAnswerKeyEditor()" style="background-color: var(--danger-color); margin-top: 15px;">Close Editor</button>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Change question quantity</h2>
+                <label for="q-quantity">New Question Count (Default: 40)</label>
+                <input type="number" id="q-quantity" value="40" min="1" max="100">
+                <button onclick="saveAdminSettings('quantity')">Save Quantity</button>
+            </div>
+
+            <div class="admin-section">
+                <h2>Change question Time</h2>
+                <label for="q-time">New Time (in seconds)</label>
+                <input type="number" id="q-time" value="900" min="60" max="3600">
+                <button onclick="saveAdminSettings('time')">Save Time</button>
+            </div>
+            
+            <div class="admin-section full-width">
+                <button id="student-result-btn" class="result-toggle-btn">Student Result</button>
+            </div>
+
+            <div id="student-result-section" class="hidden-section admin-result-area">
+                <h3 class="main-heading">Student Test Results</h3>
+                <input type="text" id="student-search" placeholder="Student Name search...">
+                
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Set</th>
+                            <th>Date</th>
+                            <th>Mark</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body">
+                        </tbody>
+                </table>
+                <button id="clear-data-btn" class="clear-btn">Clear Data</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // *** IMPORTANT ***: Apni JSONBin API Key yahan daalein (Private Key)
+        const JSONBIN_API_KEY = '$2a$10$2JgPXdUxE9OHRts9j9vyAuMMmQ7yXEwRaCMHyO7tol4.zu.1ElRw6'; 
+        
+        // *** IMPORTANT ***: Apni nayi JSONBin ID yahan daalein
+        const JSONBIN_BIN_ID = '68eedf57d0ea881f40a345a9'; 
+        
+        // Yeh URL aapki Bin ID se automatically ban jayega
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>

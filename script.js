@@ -3,8 +3,8 @@
 
 // --- 1. Global Variables and Initial Data Setup ---
 
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123';
+const ADMIN_USER = 'gopal@1234';
+const ADMIN_PASS = 'babli33@33';
 const DEFAULT_Q_COUNT = 40;
 const DEFAULT_Q_TIME_SEC = 900; // 15 minutes
 const Q_MARK = 1;
@@ -512,5 +512,6 @@ async function initializeApp() {
     // Other local settings will load, but results will be empty until Admin clicks 'Student Result' button.
     showScreen('home-screen');
 }
+
 
 initializeApp();

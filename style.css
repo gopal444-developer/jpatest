@@ -24,6 +24,10 @@ body {
     color: var(--text-color);
     line-height: 1.6;
 }
+.gopal{
+    margin-top: 2.5rem;
+    text-align:center;
+}
 
 /* Navbar Styling */
 .navbar {
@@ -344,4 +348,5 @@ button {
         padding: 8px;
         font-size: 0.9em;
     }
+
 }

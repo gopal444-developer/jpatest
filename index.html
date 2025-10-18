@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JPA Online Test - Advanced</title>
+    <title>JPA Online Test - Advanced Scheduling & Custom Sets</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,16 +21,24 @@
         <section id="home-screen" class="active-section">
             <h1 class="main-heading">Welcome to JPA Test</h1>
             <div class="center-box">
-                <h2>Enter Student Name</h2>
-                <input type="text" id="student-name" placeholder="Apna pura naam dalen..."> 
                 
-                <div class="set-buttons">
-                    <button class="set-btn" data-set="A">Set A (Loading...)</button>
-                    <button class="set-btn" data-set="B">Set B (Loading...)</button>
-                    <button class="set-btn" data-set="C">Set C (Loading...)</button>
+                <h2>Live & Scheduled Tests</h2>
+                <div id="scheduled-test-list" class="set-buttons" style="flex-direction: column; gap: 15px; margin-bottom: 25px;">
+                    <p id="no-tests-message" style="color: #666;">No tests scheduled currently.</p>
                 </div>
                 
-                <div id="test-rules-card">
+                <div id="student-input-container" class="hidden-section">
+                    <h2>Enter Student Name</h2>
+                    <input type="text" id="student-name" placeholder="Apna pura naam dalen..." style="margin-top: 5px;"> 
+                </div>
+                
+                <div id="set-selection-container" class="hidden-section">
+                    <h2>Select Your Test Set</h2>
+                    <p style="font-size: 0.9em; color: var(--primary-color);">Please choose a set from the list:</p>
+                    <div id="available-sets-list" class="set-buttons" style="display: flex; gap: 10px; margin-top: 10px; justify-content: center;">
+                        </div>
+                </div>
+                <div id="test-rules-card" class="hidden-section">
                     <h4 style="color: var(--primary-color); border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">Test Rules Summary:</h4>
                     <ul class="rules-list">
                         <li>⏱️ Total Time: <span id="summary-time">0</span> Minutes</li>
@@ -39,14 +47,15 @@
                     </ul>
                     <button id="show-detailed-rules" class="rules-toggle-btn">Read Detailed Instructions 📖</button>
                     <div id="detailed-rules-text" class="hidden-section detailed-rules">
-                         <p>1. **Environment:** Do not switch tabs or minimize the browser during the test. Doing so may result in automatic submission.</p>
-                         <p>2. **Attempted Questions:** You can navigate to any attempted or unattempted question using the panel on the right.</p>
-                         <p>3. **Submission:** Click the **Submit** button on the last question, or the test will automatically submit when the timer runs out.</p>
-                         <p>4. **Marking:** Scores are calculated based on the displayed marking scheme (positive/negative marks).</p>
+                             <p>1. **Environment:** Do not switch tabs or minimize the browser during the test. Doing so may result in automatic submission.</p>
+                             <p>2. **Attempted Questions:** You can navigate to any attempted or unattempted question using the panel on the right.</p>
+                             <p>3. **Submission:** Click the **Submit** button on the last question, or the test will automatically submit when the timer runs out.</p>
+                             <p>4. **Marking:** Scores are calculated based on the displayed marking scheme (positive/negative marks).</p>
                     </div>
+                    <button id="start-test-btn" class="nav-btn hidden-section" style="margin-top: 15px; width: 100%;">Start Test</button>
                 </div>
 
-                <button id="resume-btn" class="nav-btn hidden-section" style="background-color: var(--success-color);">Resume Previous Test</button>
+                <button id="resume-btn" class="nav-btn hidden-section" style="background-color: var(--success-color); margin-top: 20px;">Resume Previous Test</button>
                 <div id="live-date"></div>
             </div>
         </section>
@@ -64,12 +73,12 @@
                 <div id="question-image-display" class="question-image-display"></div>
 
                 <div id="question-display">
-                    </div>
+                </div>
                 
                 <div class="quiz-status-panel">
                     <h3>Question Status:</h3>
                     <div id="question-nav-grid" class="question-nav-grid">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="quiz-navigation">
@@ -108,6 +117,49 @@
 
         <section id="admin-panel" class="hidden-section">
             <h1 class="main-heading">Admin Panel</h1>
+            
+            <div class="admin-section">
+                <h2>Test Scheduler & Management 📅</h2>
+                <input type="text" id="test-title" placeholder="Test Title (e.g., Weekly Mock Test)" required>
+                
+                <label for="schedule-date" style="display: block; margin-top: 10px;">Start Date & Time</label>
+                <input type="datetime-local" id="schedule-datetime" required>
+                
+                <label for="schedule-duration" style="display: block; margin-top: 10px;">Duration (in Minutes)</label>
+                <input type="number" id="schedule-duration" value="15" min="1" required style="width: 100%;">
+
+                <div style="margin: 20px 0; padding: 10px; border: 1px dashed var(--primary-color);">
+                    <label style="display: block; font-weight: bold; margin-bottom: 10px;">Question Sets Upload (A, B, C)</label>
+                    <p style="font-size: 0.85em; color: var(--danger-color); margin-bottom: 10px;">Upload a JSON file for each set. File must contain an array of question objects.</p>
+                    
+                    <div style="display: flex; justify-content: space-between; gap: 10px;">
+                        <label class="custom-file-upload set-upload-btn" for="import-set-A">
+                            <input type="file" id="import-set-A" accept=".json" onchange="loadSetQuestions(event, 'A')"/>
+                            Set A Qs (Upload)
+                        </label>
+                        <label class="custom-file-upload set-upload-btn" for="import-set-B">
+                            <input type="file" id="import-set-B" accept=".json" onchange="loadSetQuestions(event, 'B')"/>
+                            Set B Qs (Upload)
+                        </label>
+                        <label class="custom-file-upload set-upload-btn" for="import-set-C">
+                            <input type="file" id="import-set-C" accept=".json" onchange="loadSetQuestions(event, 'C')"/>
+                            Set C Qs (Upload)
+                        </label>
+                    </div>
+                    <div id="set-upload-status" style="margin-top: 10px; font-size: 0.9em;">
+                        <span id="status-A" style="color: #666;">A: Not Loaded</span> | 
+                        <span id="status-B" style="color: #666;">B: Not Loaded</span> | 
+                        <span id="status-C" style="color: #666;">C: Not Loaded</span>
+                    </div>
+                </div>
+
+                <button onclick="scheduleNewTest()" style="background-color: var(--success-color); width: 100%;">Schedule New Test</button>
+
+                <h3 style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">Scheduled List:</h3>
+                <div id="scheduled-admin-list">
+                    <p style="font-size: 0.9em; color: #999;">No scheduled tests yet.</p>
+                </div>
+            </div>
 
             <div class="admin-section">
                 <h2>Set Marking Scheme</h2>
@@ -117,47 +169,10 @@
                 <input type="number" id="negative-mark" value="0" style="width: 100%;">
                 <button onclick="saveAdminSettings('marking')" style="background-color: var(--secondary-color);">Save Marking Scheme</button>
             </div>
-
-            <div class="admin-section">
-                <h2>Question Bank Management (CRUD)</h2>
-                <p>Select a Set to modify its questions (Text, Image URL, Options, Answer).</p>
-                <button class="admin-set-btn" data-set="A" onclick="openAnswerKeyEditor('A')">Set A Key/Q</button>
-                <button class="admin-set-btn" data-set="B" onclick="openAnswerKeyEditor('B')">Set B Key/Q</button>
-                <button class="admin-set-btn" data-set="C" onclick="openAnswerKeyEditor('C')">Set C Key/Q</button>
-
-                <div id="answer-key-editor" class="hidden-section" style="margin-top: 20px; padding: 15px; border: 1px dashed var(--primary-color);">
-                    <h3>Editing Set: <span id="editing-set-name"></span></h3>
-                    <p style="color: var(--danger-color); font-weight: 600;">⚠️ Changes are saved locally. Use a proper server for production!</p>
-                    
-                    <button onclick="addNewQuestion()" style="background-color: var(--success-color); margin-bottom: 15px; display: block; width: 100%;">+ Add New Question</button>
-                    
-                    <div id="questions-list-container"></div>
-                    
-                    <button onclick="saveAnswerKeyChanges()" style="background-color: var(--success-color); margin-top: 15px;">Save Changes</button>
-                    <button onclick="closeAnswerKeyEditor()" style="background-color: var(--danger-color); margin-top: 15px;">Close Editor</button>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h2>Data Utility: Import/Export</h2>
-                <p>Backup or restore your questions data.</p>
-                <button onclick="exportQuestionsData()">Export All Questions (JSON)</button>
-                <label class="custom-file-upload">
-                    <input type="file" id="import-file-input" accept=".json" onchange="importQuestionsData(event)"/>
-                    Import Questions (JSON)
-                </label>
-            </div>
-
-
-            <div class="admin-section">
-                <h2>Change Quiz Time</h2>
-                <label for="q-time">New Time (in seconds)</label>
-                <input type="number" id="q-time" value="900" min="60" max="3600">
-                <button onclick="saveAdminSettings('time')">Save Time</button>
-            </div>
             
             <div class="admin-section full-width">
                 <button id="student-result-btn" class="result-toggle-btn">Student Result</button>
+                <button id="top-incorrect-btn" class="result-toggle-btn" style="background-color: #ff5722; margin-top: 10px;">Top Incorrect Questions 🔥</button>
                 <button id="download-data-btn" class="result-toggle-btn" style="background-color: #00bcd4; margin-top: 10px;">Download Results (CSV)</button>
             </div>
 
@@ -179,6 +194,14 @@
                 </table>
                 <button id="clear-data-btn" class="clear-btn">Clear Data</button>
             </div>
+            
+            <div id="top-incorrect-section" class="hidden-section admin-result-area">
+                <h3 class="main-heading" style="color: var(--danger-color);">Most Frequently Incorrect Questions</h3>
+                <p style="text-align: center; margin-bottom: 15px;">List is sorted by incorrect attempts in descending order.</p>
+                <div id="incorrect-list-container">
+                </div>
+            </div>
+
         </section>
 
     </main>

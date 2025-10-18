@@ -37,7 +37,7 @@ body {
     display: none !important;
 }
 
-/* --- 3. Navbar Styling (No Change) --- */
+/* --- 3. Navbar Styling --- */
 .navbar {
     background-color: var(--primary-color);
     color: white;
@@ -120,7 +120,7 @@ button {
     background-color: var(--secondary-color);
     color: var(--text-color);
     flex: 1;
-    font-size: 0.9em; /* Slightly smaller text for button */
+    font-size: 0.9em; 
 }
 
 .set-buttons button:hover {
@@ -144,7 +144,7 @@ button {
     cursor: not-allowed;
 }
 
-/* --- NEW: Home Screen Rules Card Styling --- */
+/* Home Screen Rules Card Styling */
 #test-rules-card {
     margin-top: 25px; 
     padding: 15px; 
@@ -172,7 +172,7 @@ button {
 }
 
 .rules-toggle-btn {
-    background-color: #607d8b; /* Greyish blue */
+    background-color: #607d8b; 
     color: white;
     padding: 8px 15px;
     font-size: 0.9em;
@@ -191,10 +191,9 @@ button {
 .detailed-rules p {
     margin-bottom: 5px;
 }
-/* --- END NEW STYLING --- */
 
 
-/* --- 5. Quiz Screen Alignment (Grid) (No Major Change) --- */
+/* --- 5. Quiz Screen Alignment (Grid) --- */
 .quiz-container {
     max-width: 950px; 
     margin: 0 auto;
@@ -361,7 +360,7 @@ button {
 }
 
 
-/* --- 6. Result Screen (No Change) --- */
+/* --- 6. Result Screen --- */
 .result-box {
     max-width: 400px;
     margin: 30px auto;
@@ -397,7 +396,7 @@ button {
     color: white;
 }
 
-/* --- 7. Admin Panel (No Change) --- */
+/* --- 7. Admin Panel --- */
 #admin-panel {
     max-width: 950px;
     margin: 0 auto;
@@ -509,7 +508,7 @@ button {
     width: 100%;
 }
 
-/* --- 8. Media Queries (Responsiveness) (No Change) --- */
+/* --- 8. Media Queries (Responsiveness) --- */
 @media (max-width: 950px) {
     .quiz-container {
         grid-template-columns: 1fr;

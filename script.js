@@ -1,24 +1,32 @@
-// --- J P A Test Website - script.js (V11 - Top Incorrect Multi-Test & Date Fix) ---
+// --- J P A Test Website - script.js (FINAL FIXES - Admin Button Fix & Credentials) ---
 
 // --- 1. Global Variables and Initial Data Setup ---
+
+// 🛑 APNI ASLI JSONBIN.IO DETAILS YAHAN DAALEIN 🛑
+// Credentials provided by the user in the HTML:
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+  
+ 
+// 🛑 ------------------------------------------- 🛑
 
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin123';
 const DEFAULT_Q_TIME_SEC = 900; // 15 minutes
 
 let studentName = '';
-let currentSet = ''; // Track the set selected by the student
+let currentSet = ''; 
 let currentQuestionIndex = 0; 
 let userAnswers = {}; 
 let currentQuestionMap = [];
 let currentOptionMaps = {}; 
-let currentTestQuestions = {}; // Holds questions for the active scheduled test
+let currentTestQuestions = {}; 
 
 let quizTimerInterval;
 let quizRemainingTime = DEFAULT_Q_TIME_SEC;
-let selectedTestId = null; // Track the currently selected scheduled test ID
+let selectedTestId = null; 
 
-let studentResults = []; 
+let studentResults = []; // Initialize as an empty array
+let scheduledTests = []; // Initialize as an empty array
 
 // Data containers
 let adminSettings = JSON.parse(localStorage.getItem('adminSettings')) || {
@@ -27,37 +35,48 @@ let adminSettings = JSON.parse(localStorage.getItem('adminSettings')) || {
     negativeMark: 0, 
 };
 
-// Scheduled Tests data structure now includes 'questions' key
-let scheduledTests = JSON.parse(localStorage.getItem('scheduledTests')) || [];
-
-// Temporary storage for admin's set uploads before scheduling a new test
+// Temporary storage for admin's set uploads
 let tempNewTestQuestions = { A: null, B: null, C: null }; 
 
 
 // --- 2. JSONBin API Functions (Centralized Data Handling) ---
 
-async function fetchResultsFromServer() {
+// Fetch ALL data (results and scheduled tests) from the server
+async function fetchAdminDataFromServer() {
     try {
-        const response = await fetch(JSONBIN_URL, {
+        const response = await fetch(JSONBIN_URL + '/latest', { // Added /latest for current version
             method: 'GET',
             headers: { 'X-Master-Key': JSONBIN_API_KEY, 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.statusText}`);
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
         }
 
         const data = await response.json();
-        studentResults = data.record.results || []; 
-        return studentResults;
+        
+        // Ensure data.record exists and is an object before accessing properties
+        if (data.record && typeof data.record === 'object') {
+             studentResults = data.record.results || []; 
+             scheduledTests = data.record.scheduledTests || []; 
+             console.log("Data fetched successfully from server.");
+        } else {
+             // If record is missing or not structured as expected, initialize empty arrays
+             studentResults = []; 
+             scheduledTests = [];
+             console.warn("Server data structure unexpected, initializing empty arrays.");
+        }
+        
+        return { results: studentResults, tests: scheduledTests };
     } catch (error) {
-        console.error("Error fetching results:", error);
-        return []; 
+        console.error("Error fetching admin data (Check JSONBIN URL/API Key/Permissions):", error);
+        return { results: [], tests: [] }; 
     }
 }
 
-async function saveResultsToServer() {
-    try {
+// Save data to the server (Used by both saveResultsToServer and saveScheduledTestsToServer internally)
+async function saveAllDataToServer(dataToSave) {
+     try {
         const response = await fetch(JSONBIN_URL, {
             method: 'PUT',
             headers: {
@@ -65,19 +84,43 @@ async function saveResultsToServer() {
                 'Content-Type': 'application/json',
                 'X-Bin-Versioning': 'false' 
             },
-            body: JSON.stringify({ results: studentResults }) 
+            body: JSON.stringify(dataToSave) 
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Failed to save: ${response.statusText} - ${errorData.message}`);
+            const errorText = await response.text();
+            throw new Error(`Failed to save data: ${response.statusText}. Response: ${errorText}`);
         }
+        console.log("Data saved successfully to server.");
         return true;
     } catch (error) {
-        console.error("Error saving results:", error);
-        alert(`Result server par save nahi ho paya: ${error.message}`);
+        console.error("Error saving data (Check JSONBIN URL/API Key/Permissions):", error);
+        alert(`Data server par save nahi ho paya: ${error.message}`);
         return false;
     }
+}
+
+
+// Save ONLY student results to the server
+async function saveResultsToServer() {
+    // Fetch current scheduledTests before saving to avoid overwriting
+    const currentData = await fetchAdminDataFromServer();
+    const dataToSave = {
+        results: studentResults,
+        scheduledTests: currentData.tests 
+    };
+    return saveAllDataToServer(dataToSave);
+}
+
+// Save ONLY scheduledTests to the server
+async function saveScheduledTestsToServer() {
+    // Fetch current results before saving to avoid overwriting
+    const currentData = await fetchAdminDataFromServer();
+    const dataToSave = {
+        results: currentData.results, 
+        scheduledTests: scheduledTests 
+    };
+    return saveAllDataToServer(dataToSave);
 }
 
 
@@ -94,19 +137,31 @@ function showScreen(screenId) {
     document.querySelectorAll('section').forEach(section => {
         section.classList.add('hidden-section');
     });
-    document.getElementById(screenId).classList.remove('hidden-section');
+    
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.remove('hidden-section');
+        targetScreen.classList.add('active-section');
+    } else {
+        console.error(`Attempted to show non-existent screen: ${screenId}`);
+    }
+
 
     document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+    // Ensure navigation links work correctly
     if (screenId === 'home-screen' || screenId === 'quiz-screen' || screenId === 'result-screen') {
-        document.getElementById('home-link').classList.add('active');
+        const homeLink = document.getElementById('home-link');
+        if (homeLink) homeLink.classList.add('active');
     } else if (screenId === 'admin-login-screen' || screenId === 'admin-panel') {
-        document.getElementById('admin-link').classList.add('active');
+        const adminLink = document.getElementById('admin-link');
+        if (adminLink) adminLink.classList.add('active');
     }
 }
 
 function updateLiveDate() {
     const now = new Date();
-    document.getElementById('live-date').textContent = now.toLocaleString();
+    const dateElement = document.getElementById('live-date');
+    if (dateElement) dateElement.textContent = now.toLocaleString();
 }
 setInterval(updateLiveDate, 1000);
 
@@ -136,100 +191,128 @@ function loadQuizProgress() {
     return null;
 }
 
+// CheckResumeOption now relies on scheduledTests being loaded from server
 function checkResumeOption() {
     const progress = loadQuizProgress();
     const resumeBtn = document.getElementById('resume-btn');
     
     if (progress && progress.time > 0) {
-        const test = scheduledTests.find(t => t.id === progress.testId);
+        // Use the globally loaded scheduledTests array
+        const test = scheduledTests.find(t => t.id === progress.testId); 
         if (test && test.questions && test.questions[progress.set]) {
-            resumeBtn.classList.remove('hidden-section');
+            if (resumeBtn) resumeBtn.classList.remove('hidden-section');
             return;
         }
     } 
-    resumeBtn.classList.add('hidden-section');
+    if (resumeBtn) resumeBtn.classList.add('hidden-section');
     localStorage.removeItem('jpaQuizProgress'); 
 }
 
-document.getElementById('resume-btn').addEventListener('click', () => {
-    const progress = loadQuizProgress();
-    if (!progress) return;
+const resumeBtn = document.getElementById('resume-btn');
+if(resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+        const progress = loadQuizProgress();
+        if (!progress) return;
 
-    const test = scheduledTests.find(t => t.id === progress.testId);
-    if (!test || !test.questions || !test.questions[progress.set]) {
-         alert("Cannot resume: The scheduled test or its question set is missing.");
-         localStorage.removeItem('jpaQuizProgress');
-         checkResumeOption();
-         return;
-    }
-    
-    const now = new Date().getTime();
-    const endTime = new Date(test.startTime).getTime() + test.durationMinutes * 60 * 1000;
+        const test = scheduledTests.find(t => t.id === progress.testId);
+        if (!test || !test.questions || !test.questions[progress.set]) {
+            alert("Cannot resume: The scheduled test or its question set is missing (check server data).");
+            localStorage.removeItem('jpaQuizProgress');
+            checkResumeOption();
+            return;
+        }
+        
+        const now = new Date().getTime();
+        const endTime = new Date(test.startTime).getTime() + test.durationMinutes * 60 * 1000;
 
-    if (now >= endTime) {
-        alert("The test window has expired. Cannot resume, submitting the test now.");
-        currentTestQuestions = test.questions;
-        currentSet = progress.set;
+        if (now >= endTime) {
+            alert("The test window has expired. Cannot resume, submitting the test now.");
+            currentTestQuestions = test.questions;
+            currentSet = progress.set;
+            studentName = progress.name;
+            userAnswers = progress.answers;
+            currentQuestionMap = progress.map;
+            currentOptionMaps = progress.optionMaps;
+            selectedTestId = progress.testId;
+            submitTest();
+            return;
+        }
+
+        currentTestQuestions = test.questions; 
         studentName = progress.name;
+        currentSet = progress.set;
+        currentQuestionIndex = progress.index;
         userAnswers = progress.answers;
+        quizRemainingTime = progress.time;
         currentQuestionMap = progress.map;
-        currentOptionMaps = progress.optionMaps;
+        currentOptionMaps = progress.optionMaps; 
         selectedTestId = progress.testId;
-        submitTest();
-        return;
-    }
 
-    currentTestQuestions = test.questions; 
-    studentName = progress.name;
-    currentSet = progress.set;
-    currentQuestionIndex = progress.index;
-    userAnswers = progress.answers;
-    quizRemainingTime = progress.time;
-    currentQuestionMap = progress.map;
-    currentOptionMaps = progress.optionMaps; 
-    selectedTestId = progress.testId;
+        const quizHeading = document.getElementById('quiz-welcome-heading');
+        if (quizHeading) quizHeading.textContent = `${test.title}, ${studentName} (Selected Set: ${currentSet})`;
+        startQuiz(true); 
+    });
+}
 
-    document.getElementById('quiz-welcome-heading').textContent = `Welcome Back, ${studentName} (Set ${currentSet})`;
-    startQuiz(true); 
-});
 
 // --- 5. Home Page Initialization and Dynamic Test Listing Logic ---
 
-function updateHomePageData() {
-    document.getElementById('summary-pos-mark').textContent = adminSettings.positiveMark;
-    document.getElementById('summary-neg-mark').textContent = adminSettings.negativeMark;
+async function updateHomePageData() {
+    const posMark = document.getElementById('summary-pos-mark');
+    if(posMark) posMark.textContent = adminSettings.positiveMark;
+    const negMark = document.getElementById('summary-neg-mark');
+    if(negMark) negMark.textContent = adminSettings.negativeMark;
 
+    // Fetch latest data before rendering tests
+    await fetchAdminDataFromServer(); 
+    checkResumeOption(); // Re-check resume option with latest data
     renderScheduledTests();
 }
 
-document.getElementById('show-detailed-rules').addEventListener('click', () => {
-    const detailed = document.getElementById('detailed-rules-text');
-    detailed.classList.toggle('hidden-section');
-    document.getElementById('show-detailed-rules').textContent = detailed.classList.contains('hidden-section') 
-        ? 'Read Detailed Instructions 📖' 
-        : 'Hide Instructions ⬆️';
-});
+const detailedRulesBtn = document.getElementById('show-detailed-rules');
+if (detailedRulesBtn) {
+    detailedRulesBtn.addEventListener('click', () => {
+        const detailed = document.getElementById('detailed-rules-text');
+        if (detailed) {
+            detailed.classList.toggle('hidden-section');
+            detailedRulesBtn.textContent = detailed.classList.contains('hidden-section') 
+                ? 'Read Detailed Instructions 📖' 
+                : 'Hide Instructions ⬆️';
+        }
+    });
+}
 
-document.getElementById('back-to-home').addEventListener('click', () => {
-    showScreen('home-screen');
-    document.getElementById('student-name-result').textContent = ''; 
-    document.getElementById('test-set-result').textContent = ''; 
-    document.getElementById('student-name').value = ''; 
-    currentTestQuestions = {}; 
-    currentSet = '';
-    selectedTestId = null; 
-    checkResumeOption();
-    updateHomePageData();
-});
+const backToHomeBtn = document.getElementById('back-to-home');
+if (backToHomeBtn) {
+    backToHomeBtn.addEventListener('click', () => {
+        showScreen('home-screen');
+        const nameResult = document.getElementById('student-name-result');
+        if (nameResult) nameResult.textContent = ''; 
+        const testSetResult = document.getElementById('test-set-result');
+        if (testSetResult) testSetResult.textContent = ''; 
+        const studentNameInput = document.getElementById('student-name');
+        if (studentNameInput) studentNameInput.value = ''; 
+        currentTestQuestions = {}; 
+        currentSet = '';
+        selectedTestId = null; 
+        updateHomePageData();
+    });
+}
 
 function renderScheduledTests() {
     const container = document.getElementById('scheduled-test-list');
+    if (!container) return; // Safely exit if container not found
+    
     container.innerHTML = '';
     selectedTestId = null;
     currentSet = '';
-    document.getElementById('test-rules-card').classList.add('hidden-section');
-    document.getElementById('student-input-container').classList.add('hidden-section');
-    document.getElementById('set-selection-container').classList.add('hidden-section');
+    
+    const rulesCard = document.getElementById('test-rules-card');
+    if (rulesCard) rulesCard.classList.add('hidden-section');
+    const inputContainer = document.getElementById('student-input-container');
+    if (inputContainer) inputContainer.classList.add('hidden-section');
+    const setContainer = document.getElementById('set-selection-container');
+    if (setContainer) setContainer.classList.add('hidden-section');
 
     const liveTests = scheduledTests.filter(t => {
         const now = new Date().getTime();
@@ -293,39 +376,50 @@ function selectTest(testId, status) {
     document.querySelectorAll('.scheduled-test-btn').forEach(btn => btn.classList.remove('selected'));
     
     const selectedBtn = document.querySelector(`.scheduled-test-btn[data-id="${testId}"]`);
-    selectedBtn.classList.add('selected');
+    if (selectedBtn) selectedBtn.classList.add('selected');
     
     const selectedTest = scheduledTests.find(t => t.id === testId);
     selectedTestId = testId;
-    currentTestQuestions = selectedTest.questions || {}; 
+    currentTestQuestions = selectedTest ? selectedTest.questions || {} : {}; 
     currentSet = '';
 
     const availableSets = Object.keys(currentTestQuestions).filter(set => currentTestQuestions[set] && currentTestQuestions[set].length > 0);
 
-
-    document.getElementById('summary-time').textContent = selectedTest.durationMinutes;
-    document.getElementById('test-rules-card').classList.remove('hidden-section');
-    document.getElementById('start-test-btn').classList.add('hidden-section');
-    document.getElementById('set-selection-container').classList.add('hidden-section');
+    const summaryTime = document.getElementById('summary-time');
+    if (summaryTime) summaryTime.textContent = selectedTest ? selectedTest.durationMinutes : 'N/A';
+    
+    const rulesCard = document.getElementById('test-rules-card');
+    if (rulesCard) rulesCard.classList.remove('hidden-section');
+    
+    const startBtn = document.getElementById('start-test-btn');
+    if (startBtn) startBtn.classList.add('hidden-section');
+    
+    const setContainer = document.getElementById('set-selection-container');
+    if (setContainer) setContainer.classList.add('hidden-section');
 
 
     if (status === 'live' && availableSets.length > 0) {
-        document.getElementById('student-input-container').classList.remove('hidden-section');
+        const inputContainer = document.getElementById('student-input-container');
+        if (inputContainer) inputContainer.classList.remove('hidden-section');
         renderSetSelection(availableSets);
-        document.getElementById('set-selection-container').classList.remove('hidden-section');
+        if (setContainer) setContainer.classList.remove('hidden-section');
 
     } else if (status === 'live' && availableSets.length === 0) {
         alert("This test is live but no question sets are available (contact admin).");
-        document.getElementById('student-input-container').classList.add('hidden-section');
-        document.getElementById('test-rules-card').classList.add('hidden-section');
+        const inputContainer = document.getElementById('student-input-container');
+        if (inputContainer) inputContainer.classList.add('hidden-section');
+        if (rulesCard) rulesCard.classList.add('hidden-section');
     } else if (status === 'upcoming') {
-        document.getElementById('student-input-container').classList.add('hidden-section');
-        document.getElementById('test-rules-card').classList.remove('hidden-section');
+        const inputContainer = document.getElementById('student-input-container');
+        if (inputContainer) inputContainer.classList.add('hidden-section');
+        if (rulesCard) rulesCard.classList.remove('hidden-section');
     }
 }
 
 function renderSetSelection(sets) {
     const container = document.getElementById('available-sets-list');
+    if (!container) return;
+    
     container.innerHTML = '';
     currentSet = ''; 
 
@@ -345,72 +439,83 @@ function selectSetForTest(set) {
     currentSet = set;
     
     document.querySelectorAll('.set-select-btn').forEach(btn => btn.classList.remove('selected'));
-    document.querySelector(`.set-select-btn[data-set="${set}"]`).classList.add('selected');
+    const selectedSetBtn = document.querySelector(`.set-select-btn[data-set="${set}"]`);
+    if (selectedSetBtn) selectedSetBtn.classList.add('selected');
 
     const startButton = document.getElementById('start-test-btn');
-    startButton.textContent = `Start Test with Set ${set}`;
-    startButton.classList.remove('hidden-section');
+    if (startButton) {
+        startButton.textContent = `Start Test with Set ${set}`;
+        startButton.classList.remove('hidden-section');
+    }
 }
 
-document.getElementById('start-test-btn').addEventListener('click', async () => {
-    if (!selectedTestId || !currentSet) {
-        alert("Kripya pehle koi Test select karein aur phir ek Set select karein.");
-        return;
-    }
-    
-    studentName = document.getElementById('student-name').value.trim();
-    if (studentName.length < 3) {
-        alert("Kripya apna pura naam dalen (Please enter your full name).");
-        return;
-    }
+const startTestBtn = document.getElementById('start-test-btn');
+if (startTestBtn) {
+    startTestBtn.addEventListener('click', async () => {
+        if (!selectedTestId || !currentSet) {
+            alert("Kripya pehle koi Test select karein aur phir ek Set select karein.");
+            return;
+        }
+        
+        const studentNameInput = document.getElementById('student-name');
+        studentName = studentNameInput ? studentNameInput.value.trim() : '';
+        
+        if (studentName.length < 3) {
+            alert("Kripya apna pura naam dalen (Please enter your full name).");
+            return;
+        }
 
-    await fetchResultsFromServer(); 
-    const isAlreadySubmitted = studentResults.some(r => 
-        r.name.toLowerCase() === studentName.toLowerCase() && r.testId === selectedTestId
-    );
+        await fetchAdminDataFromServer(); // Get latest results and schedule
+        const isAlreadySubmitted = studentResults.some(r => 
+            r.name.toLowerCase() === studentName.toLowerCase() && r.testId === selectedTestId
+        );
 
-    if (isAlreadySubmitted) {
-        alert("You Already Submit The Test. Aap yeh test dobara shuru nahi kar sakte hain.");
-        return;
-    }
+        if (isAlreadySubmitted) {
+            alert("You Already Submit The Test. Aap yeh test dobara shuru nahi kar sakte hain.");
+            return;
+        }
 
-    const test = scheduledTests.find(t => t.id === selectedTestId);
-    
-    const now = new Date().getTime();
-    const startTime = new Date(test.startTime).getTime();
-    const durationMs = test.durationMinutes * 60 * 1000;
-    const endTime = startTime + durationMs;
-    
-    if (now < startTime || now >= endTime) {
-        alert("Yeh test abhi shuru nahi hua hai ya khatam ho chuka hai. Kripya list refresh karein.");
-        renderScheduledTests(); 
-        return;
-    }
+        const test = scheduledTests.find(t => t.id === selectedTestId);
+        if (!test) return; // Should not happen if selectedTestId is valid
+        
+        const now = new Date().getTime();
+        const startTime = new Date(test.startTime).getTime();
+        const durationMs = test.durationMinutes * 60 * 1000;
+        const endTime = startTime + durationMs;
+        
+        if (now < startTime || now >= endTime) {
+            alert("Yeh test abhi shuru nahi hua hai ya khatam ho chuka hai. Kripya list refresh karein.");
+            renderScheduledTests(); 
+            return;
+        }
 
-    const qCount = currentTestQuestions[currentSet] ? currentTestQuestions[currentSet].length : 0;
-    if (qCount === 0) {
-        alert(`Selected Set ${currentSet} mein koi questions nahi hain. Kripya Admin se sampark karein.`);
-        return;
-    }
+        const qCount = currentTestQuestions[currentSet] ? currentTestQuestions[currentSet].length : 0;
+        if (qCount === 0) {
+            alert(`Selected Set ${currentSet} mein koi questions nahi hain. Kripya Admin se sampark karein.`);
+            return;
+        }
 
-    currentQuestionIndex = 0;
-    userAnswers = {}; 
-    quizRemainingTime = test.durationMinutes * 60;
-    currentOptionMaps = {}; 
+        currentQuestionIndex = 0;
+        userAnswers = {}; 
+        quizRemainingTime = test.durationMinutes * 60;
+        currentOptionMaps = {}; 
 
-    document.getElementById('quiz-welcome-heading').textContent = `${test.title}, ${studentName} (Selected Set: ${currentSet})`;
+        const quizHeading = document.getElementById('quiz-welcome-heading');
+        if (quizHeading) quizHeading.textContent = `${test.title}, ${studentName} (Selected Set: ${currentSet})`;
 
-    currentQuestionMap = Array.from({ length: qCount }, (_, i) => i);
-    shuffleArray(currentQuestionMap); 
-    
-    startQuiz(false); 
-});
+        currentQuestionMap = Array.from({ length: qCount }, (_, i) => i);
+        shuffleArray(currentQuestionMap); 
+        
+        startQuiz(false); 
+    });
+}
 
 
 // --- 6. Quiz Timer Logic ---
 function startQuizTimer() {
     clearInterval(quizTimerInterval);
     const timerDisplay = document.getElementById('quiz-timer');
+    if (!timerDisplay) return;
     
     const initialMinutes = Math.floor(quizRemainingTime / 60);
     const initialSeconds = quizRemainingTime % 60;
@@ -491,17 +596,26 @@ function loadQuestion(index) {
     saveQuizProgress();
     
     const originalQIndex = currentQuestionMap[index];
-    const question = currentTestQuestions[currentSet][originalQIndex];
+    const questions = currentTestQuestions[currentSet];
+    if (!questions || originalQIndex >= questions.length) return;
     
-    document.getElementById('question-counter').textContent = `Q ${index + 1}/${currentQuestionMap.length}`;
-    document.getElementById('question-progress').style.width = `${((index + 1) / currentQuestionMap.length) * 100}%`;
+    const question = questions[originalQIndex];
+    
+    const qCounter = document.getElementById('question-counter');
+    if (qCounter) qCounter.textContent = `Q ${index + 1}/${currentQuestionMap.length}`;
+    
+    const qProgress = document.getElementById('question-progress');
+    if (qProgress) qProgress.style.width = `${((index + 1) / currentQuestionMap.length) * 100}%`;
     
     let questionHTML = `<div class="question-text">${index + 1}. ${question.text}</div>`;
     
-    if (question.imageURL) {
-        document.getElementById('question-image-display').innerHTML = `<img src="${question.imageURL}" alt="Question Image">`;
-    } else {
-        document.getElementById('question-image-display').innerHTML = '';
+    const qImageDisplay = document.getElementById('question-image-display');
+    if (qImageDisplay) {
+        if (question.imageURL) {
+            qImageDisplay.innerHTML = `<img src="${question.imageURL}" alt="Question Image">`;
+        } else {
+            qImageDisplay.innerHTML = '';
+        }
     }
 
     const shuffledOptions = getShuffledOptions(index, question.options);
@@ -519,24 +633,30 @@ function loadQuestion(index) {
     questionHTML += '</ul>';
     
     const questionDisplay = document.getElementById('question-display');
-    questionDisplay.innerHTML = questionHTML;
+    if (questionDisplay) {
+        questionDisplay.innerHTML = questionHTML;
 
-    questionDisplay.querySelectorAll('.option-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const optionLetter = this.getAttribute('data-option');
-            selectAnswer(optionLetter);
+        questionDisplay.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const optionLetter = this.getAttribute('data-option');
+                selectAnswer(optionLetter);
+            });
         });
-    });
+    }
 
 
-    document.getElementById('prev-btn').disabled = index === 0;
+    const prevBtn = document.getElementById('prev-btn');
+    if (prevBtn) prevBtn.disabled = index === 0;
+    
     const nextSubmitBtn = document.getElementById('next-submit-btn');
-    if (index === currentQuestionMap.length - 1) {
-        nextSubmitBtn.textContent = 'Submit Test';
-        nextSubmitBtn.classList.add('submit-btn');
-    } else {
-        nextSubmitBtn.textContent = 'Next';
-        nextSubmitBtn.classList.remove('submit-btn');
+    if (nextSubmitBtn) {
+        if (index === currentQuestionMap.length - 1) {
+            nextSubmitBtn.textContent = 'Submit Test';
+            nextSubmitBtn.classList.add('submit-btn');
+        } else {
+            nextSubmitBtn.textContent = 'Next';
+            nextSubmitBtn.classList.remove('submit-btn');
+        }
     }
 
     updateNavGrid(); 
@@ -558,6 +678,8 @@ function selectAnswer(optionLetter) {
 
 function updateNavGrid() {
     const grid = document.getElementById('question-nav-grid');
+    if (!grid) return;
+    
     grid.innerHTML = '';
     
     for (let i = 0; i < currentQuestionMap.length; i++) {
@@ -577,18 +699,22 @@ function updateNavGrid() {
     }
 }
 
-document.getElementById('prev-btn').addEventListener('click', () => loadQuestion(currentQuestionIndex - 1));
-document.getElementById('next-submit-btn').addEventListener('click', () => {
-    if (currentQuestionIndex < currentQuestionMap.length - 1) {
-        loadQuestion(currentQuestionIndex + 1);
-    } else {
-        submitTest();
-    }
-});
+const prevBtn = document.getElementById('prev-btn');
+if (prevBtn) prevBtn.addEventListener('click', () => loadQuestion(currentQuestionIndex - 1));
+
+const nextSubmitBtn = document.getElementById('next-submit-btn');
+if (nextSubmitBtn) {
+    nextSubmitBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < currentQuestionMap.length - 1) {
+            loadQuestion(currentQuestionIndex + 1);
+        } else {
+            submitTest();
+        }
+    });
+}
 
 
 // --- 8. Result Calculation and Submission ---
-
 function calculateResult() {
     const totalQ = currentQuestionMap.length;
     let correct = 0;
@@ -632,7 +758,6 @@ function submitTest() {
     const finalResult = {
         name: studentName,
         set: currentSet,
-        // Using toISOString for consistent date string storage
         date: new Date().toISOString(), 
         score: result.score,
         totalQ: result.totalQ,
@@ -651,14 +776,22 @@ function submitTest() {
 }
 
 function endQuiz(result) {
-    document.getElementById('student-name-result').textContent = studentName;
-    document.getElementById('test-set-result').textContent = currentSet;
-    document.getElementById('total-q').textContent = result.totalQ;
-    document.getElementById('attempted-q').textContent = result.attempted;
-    document.getElementById('incorrect-q').textContent = result.incorrect;
-    document.getElementById('non-attempted-q').textContent = result.totalQ - result.attempted;
-    document.getElementById('final-score').textContent = result.score;
-    document.getElementById('max-score').textContent = result.maxScore;
+    const nameResult = document.getElementById('student-name-result');
+    if (nameResult) nameResult.textContent = studentName;
+    const testSetResult = document.getElementById('test-set-result');
+    if (testSetResult) testSetResult.textContent = currentSet;
+    const totalQ = document.getElementById('total-q');
+    if (totalQ) totalQ.textContent = result.totalQ;
+    const attemptedQ = document.getElementById('attempted-q');
+    if (attemptedQ) attemptedQ.textContent = result.attempted;
+    const incorrectQ = document.getElementById('incorrect-q');
+    if (incorrectQ) incorrectQ.textContent = result.incorrect;
+    const nonAttemptedQ = document.getElementById('non-attempted-q');
+    if (nonAttemptedQ) nonAttemptedQ.textContent = result.totalQ - result.attempted;
+    const finalScore = document.getElementById('final-score');
+    if (finalScore) finalScore.textContent = result.score;
+    const maxScore = document.getElementById('max-score');
+    if (maxScore) maxScore.textContent = result.maxScore;
     
     showScreen('result-screen');
 }
@@ -666,38 +799,49 @@ function endQuiz(result) {
 
 // --- 9. Admin Panel: Login, Settings, and Test Scheduler Logic ---
 
-document.getElementById('admin-login-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = document.getElementById('admin-username').value;
-    const password = document.getElementById('admin-password').value;
+const adminLoginForm = document.getElementById('admin-login-form');
+if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('admin-username').value;
+        const password = document.getElementById('admin-password').value;
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        showScreen('admin-panel');
-        fetchResultsFromServer(); 
-        document.getElementById('admin-username').value = '';
-        document.getElementById('admin-password').value = '';
-        
-        tempNewTestQuestions = { A: null, B: null, C: null }; 
-        renderAdminScheduledList();
-        updateSetUploadStatus(); 
-    } else {
-        alert('Invalid Admin Credentials!');
-    }
-});
+        if (username === ADMIN_USER && password === ADMIN_PASS) {
+            showScreen('admin-panel');
+            // Fetch latest data for Admin Panel view
+            fetchAdminDataFromServer().then(() => {
+                const adminUsername = document.getElementById('admin-username');
+                if (adminUsername) adminUsername.value = '';
+                const adminPassword = document.getElementById('admin-password');
+                if (adminPassword) adminPassword.value = '';
+                
+                tempNewTestQuestions = { A: null, B: null, C: null }; 
+                renderAdminScheduledList();
+                updateSetUploadStatus(); 
+            });
+        } else {
+            alert('Invalid Admin Credentials!');
+        }
+    });
+}
 
 
 function saveAdminSettings(type) {
     if (type === 'marking') {
-        adminSettings.positiveMark = parseInt(document.getElementById('positive-mark').value);
-        adminSettings.negativeMark = parseInt(document.getElementById('negative-mark').value);
+        const posMark = document.getElementById('positive-mark');
+        if (posMark) adminSettings.positiveMark = parseInt(posMark.value);
+        const negMark = document.getElementById('negative-mark');
+        if (negMark) adminSettings.negativeMark = parseInt(negMark.value);
         alert('Marking scheme saved locally!');
     }
     localStorage.setItem('adminSettings', JSON.stringify(adminSettings));
     updateHomePageData();
 }
 
-document.getElementById('positive-mark').value = adminSettings.positiveMark;
-document.getElementById('negative-mark').value = adminSettings.negativeMark;
+const posMarkInput = document.getElementById('positive-mark');
+if (posMarkInput) posMarkInput.value = adminSettings.positiveMark;
+const negMarkInput = document.getElementById('negative-mark');
+if (negMarkInput) negMarkInput.value = adminSettings.negativeMark;
 
 
 // --- Question Upload Functions ---
@@ -705,6 +849,8 @@ document.getElementById('negative-mark').value = adminSettings.negativeMark;
 function updateSetUploadStatus() {
     ['A', 'B', 'C'].forEach(set => {
         const statusSpan = document.getElementById(`status-${set}`);
+        if (!statusSpan) return;
+        
         if (tempNewTestQuestions[set]) {
             statusSpan.textContent = `${set}: ${tempNewTestQuestions[set].length} Qs Loaded`;
             statusSpan.style.color = 'var(--success-color)';
@@ -728,7 +874,6 @@ function loadSetQuestions(event, set) {
                 
                 const sanitizedData = importedData.map((q, index) => ({
                     ...q,
-                    // Use a more robust ID format
                     id: q.id || `${set}_Q${index + 1}` 
                 }));
 
@@ -750,18 +895,34 @@ function loadSetQuestions(event, set) {
     reader.readAsText(file);
 }
 
-// --- Test Scheduling Functions ---
+// Global functions for file input change events (assumes HTML has these IDs/functions)
+// These lines must be outside DOMContentLoaded to be callable from inline HTML `onchange`
+window.loadSetQuestions = loadSetQuestions;
+window.saveAdminSettings = saveAdminSettings; 
+window.deleteScheduledTest = deleteScheduledTest; 
 
-function saveScheduledTests() {
-    localStorage.setItem('scheduledTests', JSON.stringify(scheduledTests));
-    renderAdminScheduledList();
-    updateHomePageData();
+
+// --- Test Scheduling Functions (MODIFIED FOR SERVER SAVE) ---
+
+// **MODIFIED**: This function is now async and saves to the server
+async function saveScheduledTests() {
+    // localStorage.setItem('scheduledTests', JSON.stringify(scheduledTests)); // Removed Local Storage Save
+    const success = await saveScheduledTestsToServer();
+    if (success) {
+        renderAdminScheduledList();
+        updateHomePageData();
+    }
 }
 
-function scheduleNewTest() {
+const scheduleTestBtn = document.getElementById('schedule-test-btn');
+// FIX: Changed to onclick="scheduleNewTest()" in HTML, so no need for this event listener
+// if (scheduleTestBtn) scheduleTestBtn.addEventListener('click', scheduleNewTest);
+
+async function scheduleNewTest() {
     const title = document.getElementById('test-title').value.trim();
     const dateTimeValue = document.getElementById('schedule-datetime').value;
-    const duration = parseInt(document.getElementById('schedule-duration').value);
+    const durationInput = document.getElementById('schedule-duration');
+    const duration = durationInput ? parseInt(durationInput.value) : 0;
 
     if (!title || !dateTimeValue || !duration || duration <= 0) {
         alert("Kripya sabhi fields sahi tarah se bharein.");
@@ -794,22 +955,30 @@ function scheduleNewTest() {
         questions: scheduledQuestions, 
     };
 
-    scheduledTests.push(newTest);
-    saveScheduledTests();
+    scheduledTests.push(newTest); // Add to the global array
+    await saveScheduledTests(); // Save the updated array to server
     alert(`Test "${title}" successfully scheduled with Sets: ${availableSets.join(', ')}!`);
     
     document.getElementById('test-title').value = '';
     document.getElementById('schedule-datetime').value = '';
-    document.getElementById('schedule-duration').value = '15';
+    if (durationInput) durationInput.value = '15';
     tempNewTestQuestions = { A: null, B: null, C: null };
-    document.getElementById('import-set-A').value = ''; 
-    document.getElementById('import-set-B').value = ''; 
-    document.getElementById('import-set-C').value = ''; 
+    
+    // Clear file inputs after scheduling
+    const importA = document.getElementById('import-set-A');
+    if (importA) importA.value = '';
+    const importB = document.getElementById('import-set-B');
+    if (importB) importB.value = '';
+    const importC = document.getElementById('import-set-C');
+    if (importC) importC.value = '';
+
     updateSetUploadStatus();
 }
 
 function renderAdminScheduledList() {
     const container = document.getElementById('scheduled-admin-list');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     if (scheduledTests.length === 0) {
@@ -831,7 +1000,13 @@ function renderAdminScheduledList() {
         const startTime = new Date(test.startTime).toLocaleString();
         
         const availableSets = test.questions ? Object.keys(test.questions).filter(set => test.questions[set] && test.questions[set].length > 0) : [];
-        const questionCount = availableSets.length > 0 ? test.questions[availableSets[0]].length : 0;
+        // Attempt to find a question count for display, assuming sets have equal question numbers
+        let questionCount = 0;
+        if (availableSets.length > 0) {
+            const firstSetQuestions = test.questions[availableSets[0]];
+            questionCount = firstSetQuestions ? firstSetQuestions.length : 0;
+        }
+        
         const setInfo = availableSets.length > 0 ? `Sets: ${availableSets.join(', ')} (${questionCount} Qs each)` : 'Sets: N/A';
         
         item.innerHTML = `
@@ -846,60 +1021,74 @@ function renderAdminScheduledList() {
     container.appendChild(list);
 }
 
-function deleteScheduledTest(id) {
-    if (confirm("Are you sure you want to delete this scheduled test? This will not delete submitted results.")) {
+// **MODIFIED**: This function is now async and saves to the server
+async function deleteScheduledTest(id) {
+    if (confirm("Are you sure you want to delete this scheduled test? This will remove it from all student devices.")) {
         scheduledTests = scheduledTests.filter(test => test.id !== id);
-        saveScheduledTests();
+        await saveScheduledTests(); // Save the removal to server
     }
 }
 
 
-// --- 10. Admin Panel: Result Display and Analytics (Date Fix) ---
+// --- 10. Admin Panel: Result Display and Analytics ---
 
-document.getElementById('student-result-btn').addEventListener('click', () => {
-    document.getElementById('top-incorrect-section').classList.add('hidden-section'); 
-    
-    const resultSection = document.getElementById('student-result-section');
-    resultSection.classList.toggle('hidden-section');
-    
-    if (!resultSection.classList.contains('hidden-section')) {
-        fetchResultsFromServer().then(renderResultTable);
-    }
-});
+const studentResultBtn = document.getElementById('student-result-btn');
+if (studentResultBtn) {
+    studentResultBtn.addEventListener('click', () => {
+        const topIncorrectSection = document.getElementById('top-incorrect-section');
+        if (topIncorrectSection) topIncorrectSection.classList.add('hidden-section'); 
+        
+        const resultSection = document.getElementById('student-result-section');
+        if (resultSection) {
+            resultSection.classList.toggle('hidden-section');
+            
+            if (!resultSection.classList.contains('hidden-section')) {
+                // Fetch latest data before rendering results
+                fetchAdminDataFromServer().then(renderResultTable);
+            }
+        }
+    });
+}
 
 function renderResultTable(results = studentResults) {
     const tbody = document.getElementById('result-table-body');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
-    const search = document.getElementById('student-search').value.toLowerCase();
+    const searchInput = document.getElementById('student-search');
+    const search = searchInput ? searchInput.value.toLowerCase() : '';
 
-    const filteredResults = results.filter(r => r.name.toLowerCase().includes(search));
+    const filteredResults = studentResults.filter(r => r.name.toLowerCase().includes(search)); // Use global studentResults
 
-    // **FIXED**: Sorting logic using Date object. Since 'r.date' is now stored as ISO string, this should work correctly.
+    // FIX: Sorting logic uses Date object and ISO string format
     filteredResults.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); 
 
     filteredResults.forEach(r => {
         const row = tbody.insertRow();
         row.insertCell().textContent = r.name;
         row.insertCell().textContent = r.set;
-        // Display using local format
         row.insertCell().textContent = new Date(r.date).toLocaleString(); 
         const maxScore = r.totalQ * adminSettings.positiveMark;
         row.insertCell().textContent = `${r.score} / ${maxScore}`;
     });
 }
 
-document.getElementById('student-search').addEventListener('input', () => renderResultTable());
+const studentSearch = document.getElementById('student-search');
+if (studentSearch) studentSearch.addEventListener('input', () => renderResultTable());
 
-document.getElementById('clear-data-btn').addEventListener('click', async () => {
-    if (confirm('Are you sure you want to CLEAR ALL STUDENT RESULTS from the server? This action is irreversible.')) {
-        studentResults = [];
-        const success = await saveResultsToServer();
-        if (success) {
-            alert('All student results cleared successfully!');
-            renderResultTable();
+const clearDataBtn = document.getElementById('clear-data-btn');
+if (clearDataBtn) {
+    clearDataBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to CLEAR ALL STUDENT RESULTS from the server? This action is irreversible.')) {
+            studentResults = [];
+            const success = await saveResultsToServer();
+            if (success) {
+                alert('All student results cleared successfully!');
+                renderResultTable();
+            }
         }
-    }
-});
+    });
+}
 
 function downloadCSV(data, filename = 'student_results.csv') {
     let csvContent = "Student Name,Set,Date,Score,Total Q,Attempted,Incorrect,Test ID\n"; 
@@ -921,41 +1110,50 @@ function downloadCSV(data, filename = 'student_results.csv') {
     }
 }
 
-document.getElementById('download-data-btn').addEventListener('click', () => {
-    if (studentResults.length > 0) {
-        downloadCSV(studentResults);
-    } else {
-        alert('No results available to download.');
-    }
-});
+const downloadDataBtn = document.getElementById('download-data-btn');
+if (downloadDataBtn) {
+    downloadDataBtn.addEventListener('click', () => {
+        if (studentResults.length > 0) {
+            downloadCSV(studentResults);
+        } else {
+            alert('No results available to download.');
+        }
+    });
+}
 
 
-// --- 11. Admin Panel: Top Incorrect Questions Logic (MODIFIED) ---
+// --- 11. Admin Panel: Top Incorrect Questions Logic ---
 
-document.getElementById('top-incorrect-btn').addEventListener('click', () => {
-    document.getElementById('student-result-section').classList.add('hidden-section');
-    
-    const incorrectSection = document.getElementById('top-incorrect-section');
-    incorrectSection.classList.toggle('hidden-section');
-    
-    if (!incorrectSection.classList.contains('hidden-section')) {
-        fetchResultsFromServer().then(results => {
-            if (results && results.length > 0) {
-                // Fetch scheduled tests again to ensure we have the question content for analysis
-                const allScheduledTests = JSON.parse(localStorage.getItem('scheduledTests')) || [];
-                // Pass scheduledTests to the analysis function
-                const incorrectData = calculateIncorrectFrequencies(results, allScheduledTests);
-                displayTopIncorrectQuestions(incorrectData);
-            } else {
-                document.getElementById('incorrect-list-container').innerHTML = '<p style="text-align: center; color: var(--danger-color);">No student results found on the server to analyze.</p>';
+const topIncorrectBtn = document.getElementById('top-incorrect-btn');
+if (topIncorrectBtn) {
+    topIncorrectBtn.addEventListener('click', () => {
+        const resultSection = document.getElementById('student-result-section');
+        if (resultSection) resultSection.classList.add('hidden-section');
+        
+        const incorrectSection = document.getElementById('top-incorrect-section');
+        if (incorrectSection) {
+            incorrectSection.classList.toggle('hidden-section');
+            
+            if (!incorrectSection.classList.contains('hidden-section')) {
+                // Fetch latest data before analysis
+                fetchAdminDataFromServer().then(({ results, tests }) => {
+                    const incorrectList = document.getElementById('incorrect-list-container');
+                    if (!incorrectList) return;
+
+                    if (results && results.length > 0) {
+                        const incorrectData = calculateIncorrectFrequencies(results, tests);
+                        displayTopIncorrectQuestions(incorrectData);
+                    } else {
+                        incorrectList.innerHTML = '<p style="text-align: center; color: var(--danger-color);">No student results found on the server to analyze.</p>';
+                    }
+                });
             }
-        });
-    }
-});
+        }
+    });
+}
 
-// **MODIFIED**: This function now tracks incorrect counts per SET *and* per TEST
+
 function calculateIncorrectFrequencies(results, scheduledTests) {
-    // Structure: { TestID: { Set: { CompositeQID: { data... } } } }
     const incorrectCounts = {}; 
 
     results.forEach(result => {
@@ -966,21 +1164,26 @@ function calculateIncorrectFrequencies(results, scheduledTests) {
         if (!currentTest || !currentTest.questions || !currentTest.questions[set]) return;
         const testQuestions = currentTest.questions[set];
 
-        // Initialize structure for this test/set combination if it doesn't exist
+        // Group by test ID and set, for robust tracking
         if (!incorrectCounts[testId]) {
-            incorrectCounts[testId] = { A: {}, B: {}, C: {} };
+            incorrectCounts[testId] = {};
+        }
+        if (!incorrectCounts[testId][set]) {
+            incorrectCounts[testId][set] = {};
         }
         
         for (const shuffledIndex in result.userAnswers) {
             const userAnswer = result.userAnswers[shuffledIndex]; 
             const originalQIndex = result.questionMap[shuffledIndex]; 
+            
+            if (originalQIndex >= testQuestions.length) continue; // Safety check
+            
             const question = testQuestions[originalQIndex];
 
             const optionMap = result.optionMaps[shuffledIndex];
             const originalUserAnswer = optionMap ? optionMap[userAnswer] : userAnswer;
 
             if (userAnswer && originalUserAnswer !== question.correctAnswer) {
-                // Key is the question's original ID/Index within the set
                 const qKey = question.id || `Q${originalQIndex + 1}`; 
                 
                 incorrectCounts[testId][set][qKey] = (incorrectCounts[testId][set][qKey] || { 
@@ -998,11 +1201,9 @@ function calculateIncorrectFrequencies(results, scheduledTests) {
         }
     });
 
-    // Flatten and sort the data for display, grouped by Test, then Set
     const sortedIncorrectData = [];
     for (const testId in incorrectCounts) {
         for (const set in incorrectCounts[testId]) {
-             // Sort questions within this set/test by incorrect count
             const sortedQuestions = Object.values(incorrectCounts[testId][set]).sort((a, b) => b.count - a.count);
             sortedIncorrectData.push(...sortedQuestions);
         }
@@ -1014,6 +1215,8 @@ function calculateIncorrectFrequencies(results, scheduledTests) {
 
 function displayTopIncorrectQuestions(topIncorrectData) {
     const container = document.getElementById('incorrect-list-container');
+    if (!container) return;
+    
     container.innerHTML = ''; 
     
     if (topIncorrectData.length === 0) {
@@ -1021,7 +1224,6 @@ function displayTopIncorrectQuestions(topIncorrectData) {
         return;
     }
 
-    // Group the data by Test Title for cleaner display
     const groupedByTest = topIncorrectData.reduce((acc, q) => {
         const key = `${q.testTitle} (ID: ${q.testId})`;
         if (!acc[key]) acc[key] = [];
@@ -1029,7 +1231,6 @@ function displayTopIncorrectQuestions(topIncorrectData) {
         return acc;
     }, {});
     
-    // Display each test's incorrect questions separately
     for (const testKey in groupedByTest) {
         const questionsList = groupedByTest[testKey];
         
@@ -1050,7 +1251,7 @@ function displayTopIncorrectQuestions(topIncorrectData) {
         `;
 
         questionsList.forEach(q => { 
-            const previewText = q.text.length > 60 ? q.text.substring(0, 60) + '...' : q.text;
+            const previewText = q.text ? (q.text.length > 60 ? q.text.substring(0, 60) + '...' : q.text) : 'N/A';
 
             tableHTML += `
                 <tr>
@@ -1069,34 +1270,47 @@ function displayTopIncorrectQuestions(topIncorrectData) {
 }
 
 
-// --- 12. Initial Setup and Navigation Fix ---
-
-document.getElementById('home-link').addEventListener('click', (e) => {
-    e.preventDefault();
-    
-    const isQuizActive = !document.getElementById('quiz-screen').classList.contains('hidden-section');
-    
-    if (isQuizActive) {
-        if (!confirm('Aapka test abhi chal raha hai. Kya aap sach mein Home screen par jaana chahte hain? Aisa karne par test **automatically submit/end** ho jayega.')) {
-            return; 
-        }
-        submitTest(); 
-        return;
-    }
-    
-    showScreen('home-screen');
-    checkResumeOption();
-    updateHomePageData();
-});
-
-document.getElementById('admin-link').addEventListener('click', (e) => {
-    e.preventDefault();
-    showScreen('admin-login-screen');
-});
-
+// --- 12. Initial Setup and Navigation Fix (Admin Button Fix Here) ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    updateHomePageData();
-    checkResumeOption();
+    // HOME LINK FIX
+    const homeLink = document.getElementById('home-link');
+    if (homeLink) {
+        homeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const quizScreen = document.getElementById('quiz-screen');
+            const isQuizActive = quizScreen && !quizScreen.classList.contains('hidden-section');
+            
+            if (isQuizActive) {
+                if (!confirm('Aapka test abhi chal raha hai. Kya aap sach mein Home screen par jaana chahte hain? Aisa karne par test **automatically submit/end** ho jayega.')) {
+                    return; 
+                }
+                submitTest(); 
+                return;
+            }
+            
+            showScreen('home-screen');
+            updateHomePageData();
+        });
+    }
+
+    // 🛑 ADMIN LINK FIX 🛑
+    // Yeh code Admin link button par click hone par "admin-login-screen" ko show karega.
+    const adminLink = document.getElementById('admin-link');
+    if (adminLink) {
+        console.log("Admin Link found and event listener attached."); 
+
+        adminLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log("Admin Link clicked. Navigating to admin-login-screen."); 
+            showScreen('admin-login-screen');
+        });
+    } else {
+        console.error("Error: Admin link with ID 'admin-link' not found in HTML.");
+    }
+
+    // Initial Load: Fetch all data and then update UI
+    fetchAdminDataFromServer().then(updateHomePageData); 
     updateLiveDate(); 
 });
